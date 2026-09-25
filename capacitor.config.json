@@ -1,0 +1,8 @@
+{
+  "appId": "com.minhasfinancas.app",
+  "appName": "Minhas Finanças",
+  "webDir": "www",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto"
+  }
+}
