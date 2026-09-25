@@ -1,0 +1,64 @@
+name: Gerar APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Preparar arquivos web
+        run: |
+          mkdir -p www assets
+          cp index.html www/
+          python3 make_icon.py assets/icon-only.png
+
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+
+      - name: Criar projeto Android
+        run: |
+          npx cap add android
+          npx capacitor-assets generate --android --iconBackgroundColor '#0f766e' --iconBackgroundColorDark '#0f766e' --splashBackgroundColor '#0f766e' --splashBackgroundColorDark '#0c1211'
+          npx cap sync android
+
+      - name: Compilar APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Renomear APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk MinhasFinancas.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MinhasFinancas-apk
+          path: MinhasFinancas.apk
+
+      - name: Publicar release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Minhas Finanças v1.0.${{ github.run_number }}
+          make_latest: true
+          body: |
+            Baixe o arquivo **MinhasFinancas.apk** abaixo e abra no celular Android para instalar.
+            Se o Android pedir, permita "instalar apps de fontes desconhecidas" para o navegador ou gerenciador de arquivos.
+          files: MinhasFinancas.apk
